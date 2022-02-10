@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.build.json",
+
+  "compilerOptions": {
+    "outDir": "./dist",
+    "lib": ["es5", "dom"],
+    "jsx": "react-jsx",
+    "types": ["unplugin-icons/types/react"]
+  }
+}

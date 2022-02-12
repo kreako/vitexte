@@ -3,6 +3,7 @@ import morgan from "morgan"
 import "express-async-errors"
 import { json, superjsonMdw } from "./super-json"
 import video from "./video"
+import words from "./words"
 
 export const app = express()
 
@@ -25,3 +26,4 @@ app.get("/error", async () => {
 })
 
 app.use("/video", video)
+app.use("/words", words)

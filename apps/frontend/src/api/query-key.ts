@@ -1,3 +1,4 @@
-export const keysVideo = {
-  video: [{ scope: "video", item: "video" }] as const,
+export const keys = {
+  video: (id: number) => [{ scope: "video", id }] as const,
+  words: (id: number) => [{ scope: "words", id }] as const,
 }

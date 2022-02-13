@@ -62,42 +62,70 @@ function Video({ onDuration, onCurrentTime, setRef }: VideoProps) {
   return <video src="/api/video/1" ref={setLocalRef} onTimeUpdate={onTimeUpdate} onPlay={onPlay} />
 }
 
-export default function Home() {
-  const video = useRef<HTMLMediaElement>()
+function useVideoController() {
+  const ref = useRef<HTMLMediaElement>()
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
+  const [_loop, setLoop] = useState({ loop: false, start: 0, end: 0 })
 
   const onDuration = (duration: number) => {
     setDuration(duration)
   }
 
-  const onCurrentTime = (duration: number) => {
+  const onCurrentTime = (currentTime: number) => {
     setCurrentTime(duration)
+    if (_loop.loop) {
+      if (currentTime >= _loop.end) {
+        seek(_loop.start)
+      }
+    }
   }
 
   const setVideoRef = (element: HTMLVideoElement) => {
-    video.current = element
+    ref.current = element
   }
 
   const play = () => {
-    if (video.current) {
-      video.current.play()
+    if (ref.current) {
+      ref.current.play()
     }
   }
 
   const pause = () => {
-    if (video.current) {
-      video.current.pause()
+    if (ref.current) {
+      ref.current.pause()
+    }
+    setLoop({ loop: false, start: 0, end: 0 })
+  }
+
+  const seek = (to: number) => {
+    if (ref.current) {
+      ref.current.currentTime = to
     }
   }
+
+  const loop = (start: number, end: number) => {
+    setLoop({ loop: true, start, end })
+    seek(start)
+    play()
+  }
+
+  const element = (
+    <Video onDuration={onDuration} onCurrentTime={onCurrentTime} setRef={setVideoRef} />
+  )
+
+  return { duration, currentTime, play, pause, seek, loop, element }
+}
+
+export default function Home() {
+  const video = useVideoController()
 
   const onWordClick = (word: WordType) => () => {
     const start = word.start
     const end = word.end
-    if (video.current) {
-      video.current.currentTime = start
-      play()
-    }
+    //video.seek(start)
+    // video.play()
+    video.loop(start, end)
   }
 
   return (
@@ -106,21 +134,19 @@ export default function Home() {
         <Words onWordClick={onWordClick} />
       </div>
       <div className="h-screen w-1/2 overflow-hidden">
-        <div className="h-2/3">
-          <Video onDuration={onDuration} onCurrentTime={onCurrentTime} setRef={setVideoRef} />
-        </div>
+        <div className="h-2/3">{video.element}</div>
         <div className="h-1/3">
-          <div>CurrentTime : {currentTime}</div>
-          <div>Duration : {duration}</div>
+          <div>CurrentTime : {video.currentTime}</div>
+          <div>Duration : {video.duration}</div>
           <div className="flex flex-row space-x-2">
             <button
-              onClick={play}
+              onClick={video.play}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
               Play
             </button>
             <button
-              onClick={pause}
+              onClick={video.pause}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
               Pause

@@ -6,6 +6,17 @@ import RawError from "../components/RawError"
 import * as Tone from "tone"
 import { useEffectOnce } from "usehooks-ts"
 
+const DEFAULT_SPACE_REM = 0.125
+
+const deltaToSpaceRem = (delta: number) => {
+  if (delta > 0.1) {
+    const s = 4 * delta + DEFAULT_SPACE_REM
+    return `${s}rem`
+  } else {
+    return `${DEFAULT_SPACE_REM}rem`
+  }
+}
+
 type WordProps = {
   word: WordType
 }
@@ -15,9 +26,12 @@ function Word({ word }: WordProps) {
     <span
       data-start={word.start}
       data-end={word.end}
-      className="text-sky-900 selection:bg-pink-300 selection:text-pink-900 hover:text-sky-700"
+      style={{
+        marginLeft: deltaToSpaceRem(word.delta.previous),
+        marginRight: deltaToSpaceRem(word.delta.next),
+      }}
     >
-      {word.word}&nbsp;
+      {word.word}
     </span>
   )
 }

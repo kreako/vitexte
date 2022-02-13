@@ -1,4 +1,4 @@
-import { WordType } from "@cleomacs/api"
+import { WordType } from "@vitexte/api"
 import { useRef, useState } from "react"
 import { useWords } from "../api/video"
 import Loading from "../components/Loading"

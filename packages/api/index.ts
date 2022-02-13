@@ -6,10 +6,16 @@ export const wordsInput = z.object({
 })
 export type WordsInput = z.infer<typeof wordsInput>
 
+export type WordDeltaType = {
+  previous: number
+  next: number
+}
+
 export type WordType = {
   start: number
   end: number
   conf: number
+  delta: WordDeltaType
   word: string
 }
 

@@ -67,13 +67,18 @@ function useVideoController() {
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [_loop, setLoop] = useState({ loop: false, start: 0, end: 0 })
+  const [count, setCount] = useState(0)
 
   const onDuration = (duration: number) => {
     setDuration(duration)
   }
 
   const onCurrentTime = (currentTime: number) => {
-    setCurrentTime(duration)
+    setCurrentTime(currentTime)
+    setCount(count + 1)
+    if (currentTime > 100) {
+      pause()
+    }
     if (_loop.loop) {
       if (currentTime >= _loop.end) {
         seek(_loop.start)
@@ -114,11 +119,13 @@ function useVideoController() {
     <Video onDuration={onDuration} onCurrentTime={onCurrentTime} setRef={setVideoRef} />
   )
 
-  return { duration, currentTime, play, pause, seek, loop, element }
+  return { duration, currentTime, play, pause, seek, loop, element, count }
+}
 }
 
 export default function Home() {
   const video = useVideoController()
+  const [display, setDisplay] = useState(false)
 
   const onWordClick = (word: WordType) => () => {
     const start = word.start
@@ -136,9 +143,20 @@ export default function Home() {
       <div className="h-screen w-1/2 overflow-hidden">
         <div className="h-2/3">{video.element}</div>
         <div className="h-1/3">
+          {display && (
+            <>
           <div>CurrentTime : {video.currentTime}</div>
           <div>Duration : {video.duration}</div>
+              <div>Count : {video.count}</div>
+            </>
+          )}
           <div className="flex flex-row space-x-2">
+            <button
+              onClick={() => video.seek(0)}
+              className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
+            >
+              Seek to 0
+            </button>
             <button
               onClick={video.play}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
@@ -149,7 +167,11 @@ export default function Home() {
               onClick={video.pause}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
-              Pause
+            <button
+              onClick={() => setDisplay(!display)}
+              className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
+            >
+              Display
             </button>
           </div>
         </div>

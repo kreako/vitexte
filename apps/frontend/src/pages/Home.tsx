@@ -4,32 +4,75 @@ import { useWords } from "../api/video"
 import Loading from "../components/Loading"
 import RawError from "../components/RawError"
 import * as Tone from "tone"
+import { useEffectOnce } from "usehooks-ts"
 
 type WordProps = {
-  onClick: () => void
-  word: string
+  word: WordType
 }
 
-function Word({ onClick, word }: WordProps) {
+function Word({ word }: WordProps) {
   return (
-    <button onClick={onClick} className="text-sky-900 hover:text-sky-700">
-      {word}
-    </button>
+    <span
+      data-start={word.start}
+      data-end={word.end}
+      className="text-sky-900 selection:bg-pink-300 selection:text-pink-900 hover:text-sky-700"
+    >
+      {word.word}&nbsp;
+    </span>
   )
 }
 
 type WordsProps = {
-  onWordClick: (word: WordType) => () => void
+  onWordSelection: (start: number, end: number) => void
 }
 
-function Words({ onWordClick }: WordsProps) {
+function Words({ onWordSelection }: WordsProps) {
   const words = useWords(1)
+
+  const onMouseUp = () => {
+    const selection = window.getSelection()
+    if (selection == null) {
+      return
+    }
+    const r = selection.getRangeAt(0)
+
+    // start
+    const startElement = r.startContainer
+    const start = startElement.parentElement?.getAttribute("data-start")
+    if (start == null) {
+      // start not defined ???
+      return
+    }
+
+    // end
+    let endElement = r.endContainer
+    if (r.endOffset === 0) {
+      // end element is the previous one, so search for it
+      if (r.endContainer.parentElement) {
+        const previousSibling = r.endContainer.parentElement.previousSibling
+        if (previousSibling) {
+          if (previousSibling.childNodes.length === 1) {
+            endElement = previousSibling.childNodes[0]
+          }
+        }
+      }
+    }
+    const end = endElement.parentElement?.getAttribute("data-end")
+    if (end == null) {
+      // end not defined ???
+      return
+    }
+
+    const startNb = parseFloat(start)
+    const endNb = parseFloat(end)
+    onWordSelection(startNb, endNb)
+  }
 
   if (words.data) {
     return (
-      <div className="flex flex-row flex-wrap space-x-2">
+      <div onMouseUp={onMouseUp} className="flex flex-row flex-wrap">
         {words.data.words.map((w) => (
-          <Word onClick={onWordClick(w)} word={w.word} key={w.start} />
+          <Word word={w} key={w.start} />
         ))}
       </div>
     )
@@ -160,23 +203,25 @@ export default function Home() {
 
   const player = useTonePlayer()
 
+  const onWordSelection = (start: number, end: number) => {
     //video.seek(start)
     // video.play()
-    video.loop(start, end)
+    // video.loop(start, end)
+    player.loop(start, end)
   }
 
   return (
     <div className="mt-2 flex flex-row space-x-4 pl-4">
       <div className="h-screen w-1/2 overflow-auto">
-        <Words onWordClick={onWordClick} />
+        <Words onWordSelection={onWordSelection} />
       </div>
       <div className="h-screen w-1/2 overflow-hidden">
         <div className="h-2/3">{video.element}</div>
         <div className="h-1/3">
           {display && (
             <>
-          <div>CurrentTime : {video.currentTime}</div>
-          <div>Duration : {video.duration}</div>
+              <div>CurrentTime : {video.currentTime}</div>
+              <div>Duration : {video.duration}</div>
               <div>Count : {video.count}</div>
             </>
           )}

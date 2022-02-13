@@ -3,6 +3,7 @@ import { useRef, useState } from "react"
 import { useWords } from "../api/video"
 import Loading from "../components/Loading"
 import RawError from "../components/RawError"
+import * as Tone from "tone"
 
 type WordProps = {
   onClick: () => void
@@ -121,15 +122,44 @@ function useVideoController() {
 
   return { duration, currentTime, play, pause, seek, loop, element, count }
 }
+
+function useTonePlayer() {
+  const [loaded, setLoaded] = useState(false)
+  const player = useRef<Tone.Player | null>(null)
+
+  useEffectOnce(() => {
+    player.current = new Tone.Player("/api/video/1", () => {
+      setLoaded(true)
+    }).toDestination()
+  })
+
+  const loop = (start: number, end: number) => {
+    if (!loaded || player.current == null) {
+      return
+    }
+    player.current.loop = true
+    player.current.loopStart = start
+    player.current.loopEnd = end
+    player.current.seek(start)
+    player.current.start()
+  }
+
+  const stop = () => {
+    if (!loaded || player.current == null) {
+      return
+    }
+    player.current.stop()
+  }
+
+  return { loop, stop }
 }
 
 export default function Home() {
   const video = useVideoController()
   const [display, setDisplay] = useState(false)
 
-  const onWordClick = (word: WordType) => () => {
-    const start = word.start
-    const end = word.end
+  const player = useTonePlayer()
+
     //video.seek(start)
     // video.play()
     video.loop(start, end)
@@ -164,9 +194,11 @@ export default function Home() {
               Play
             </button>
             <button
-              onClick={video.pause}
+              onClick={player.stop}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
+              Stop
+            </button>
             <button
               onClick={() => setDisplay(!display)}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"

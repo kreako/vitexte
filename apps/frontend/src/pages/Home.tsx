@@ -44,12 +44,12 @@ function Words({ onWordClick }: WordsProps) {
 type VideoProps = {
   onDuration: (duration: number) => void
   onCurrentTime: (currentTime: number) => void
-  setRef: (ref: HTMLVideoElement) => void
+  setRef: (ref: HTMLAudioElement) => void
 }
 
 function Video({ onDuration, onCurrentTime, setRef }: VideoProps) {
-  const ref = useRef<HTMLVideoElement>(null!)
-  const setLocalRef = (element: HTMLVideoElement) => {
+  const ref = useRef<HTMLAudioElement>(null!)
+  const setLocalRef = (element: HTMLAudioElement) => {
     ref.current = element
     setRef(element)
   }
@@ -59,11 +59,11 @@ function Video({ onDuration, onCurrentTime, setRef }: VideoProps) {
   const onPlay = () => {
     onDuration(ref.current.duration)
   }
-  return <video src="/api/video/1" ref={setLocalRef} onTimeUpdate={onTimeUpdate} onPlay={onPlay} />
+  return <audio src="/api/video/1" ref={setLocalRef} onTimeUpdate={onTimeUpdate} onPlay={onPlay} />
 }
 
 function useVideoController() {
-  const ref = useRef<HTMLMediaElement>()
+  const ref = useRef<HTMLAudioElement>()
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [_loop, setLoop] = useState({ loop: false, start: 0, end: 0 })
@@ -81,7 +81,7 @@ function useVideoController() {
     }
   }
 
-  const setVideoRef = (element: HTMLVideoElement) => {
+  const setVideoRef = (element: HTMLAudioElement) => {
     ref.current = element
   }
 

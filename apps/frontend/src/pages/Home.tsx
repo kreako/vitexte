@@ -22,6 +22,12 @@ type WordProps = {
 }
 
 function Word({ word }: WordProps) {
+  let textClass = ""
+  if (word.conf === 1) {
+    textClass = ""
+  } else {
+    textClass = "bg-sky-50"
+  }
   return (
     <span
       data-start={word.start}
@@ -30,6 +36,7 @@ function Word({ word }: WordProps) {
         marginLeft: deltaToSpaceRem(word.delta.previous),
         marginRight: deltaToSpaceRem(word.delta.next),
       }}
+      className={`${textClass}  text-sky-900 selection:bg-pink-300 selection:text-pink-900 hover:text-sky-700`}
     >
       {word.word}
     </span>

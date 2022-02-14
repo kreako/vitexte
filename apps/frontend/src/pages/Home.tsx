@@ -17,26 +17,46 @@ const deltaToSpaceRem = (delta: number) => {
   }
 }
 
-type WordProps = {
-  word: WordType
+type WordsSelection = {
+  start: number | null
+  end: number | null
 }
 
-function Word({ word }: WordProps) {
-  let textClass = ""
-  if (word.conf === 1) {
-    textClass = ""
-  } else {
-    textClass = "bg-sky-50"
+function isSelected(word: WordType, selection: WordsSelection) {
+  if (selection.start == null) {
+    return false
+  }
+  if (selection.end == null) {
+    return word.start === selection.start
+  }
+  return selection.start <= word.start && word.end <= selection.end
+}
+
+type WordProps = {
+  onClick: () => void
+  word: WordType
+  selection: WordsSelection
+}
+
+function Word({ word, onClick, selection }: WordProps) {
+  let confClass = ""
+  if (word.conf < 1) {
+    confClass = "bg-sky-50"
+  }
+  let textClass = "text-sky-900 hover:text-sky-700"
+  if (isSelected(word, selection)) {
+    textClass = "bg-pink-300 text-pink-900 hover:text-pink-700"
   }
   return (
     <span
+      onClick={onClick}
       data-start={word.start}
       data-end={word.end}
       style={{
         marginLeft: deltaToSpaceRem(word.delta.previous),
         marginRight: deltaToSpaceRem(word.delta.next),
       }}
-      className={`${textClass}  text-sky-900 selection:bg-pink-300 selection:text-pink-900 hover:text-sky-700`}
+      className={`${textClass} ${confClass} `}
     >
       {word.word}
     </span>
@@ -45,71 +65,41 @@ function Word({ word }: WordProps) {
 
 type WordsProps = {
   onWordSelection: (start: number, end: number) => void
+  clearWordSelection: () => void
 }
 
-function Words({ onWordSelection }: WordsProps) {
+function Words({ onWordSelection, clearWordSelection }: WordsProps) {
   const words = useWords(1)
+  const [selection, setSelection] = useState<WordsSelection>({ start: null, end: null })
 
-  const onMouseUp = () => {
-    const selection = window.getSelection()
-    if (selection == null) {
+  const onWordCick = (word: WordType) => () => {
+    if (selection.start == null) {
+      setSelection({ start: word.start, end: null })
+      clearWordSelection()
       return
     }
-    const r = selection.getRangeAt(0)
-
-    // start
-    const startElement = r.startContainer
-    const start = startElement.parentElement?.getAttribute("data-start")
-    if (start == null) {
-      // start not defined ???
+    if (selection.end == null) {
+      const start = selection.start
+      const end = word.end
+      setSelection({ start, end })
+      onWordSelection(start, end)
       return
     }
-
-    // end
-    let endElement = r.endContainer
-    if (r.endOffset === 0) {
-      // end element is the previous one, so search for it
-      if (r.endContainer.parentElement) {
-        const previousSibling = r.endContainer.parentElement.previousSibling
-        if (previousSibling) {
-          if (previousSibling.childNodes.length === 1) {
-            endElement = previousSibling.childNodes[0]
-          }
-        }
-      }
-    }
-    const end = endElement.parentElement?.getAttribute("data-end")
-    if (end == null) {
-      // end not defined ???
-      return
-    }
-
-    const startNb = parseFloat(start)
-    const endNb = parseFloat(end)
-    onWordSelection(startNb, endNb)
+    // replace the whole selection
+    setSelection({ start: word.start, end: null })
+    clearWordSelection()
   }
 
   if (words.data) {
     return (
-      <div
-        ref={container}
-        className={`relative flex flex-row flex-wrap leading-loose`}
-      >
-        <div
-          className="absolute inset-0 -z-10 bg-pink-100"
-          style={{
-            background: `repeating-linear-gradient( 
-  to right,
-  #f6ba52,
-  #f6ba52 1px,
-  #ffffff 1px,
-  #ffffff 200px)`,
-          }}
-        ></div>
-        {words.data.words.map((w) => (
-          <Word word={w} key={w.start} />
-        ))}
-      </div>
+      <>
+        <div>{JSON.stringify(selection)}</div>
+        <div className={`relative flex flex-row flex-wrap leading-loose`}>
+          {words.data.words.map((w) => (
+            <Word word={w} onClick={onWordCick(w)} selection={selection} key={w.start} />
+          ))}
+        </div>
+      </>
     )
   }
 
@@ -245,10 +235,14 @@ export default function Home() {
     player.loop(start, end)
   }
 
+  const clearWordSelection = () => {
+    player.stop()
+  }
+
   return (
     <div className="mt-2 flex flex-row space-x-4 pl-4">
       <div className="h-screen w-1/2 overflow-auto">
-        <Words onWordSelection={onWordSelection} />
+        <Words onWordSelection={onWordSelection} clearWordSelection={clearWordSelection} />
       </div>
       <div className="h-screen w-1/2 overflow-hidden">
         <div className="h-2/3">{video.element}</div>

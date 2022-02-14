@@ -91,7 +91,21 @@ function Words({ onWordSelection }: WordsProps) {
 
   if (words.data) {
     return (
-      <div onMouseUp={onMouseUp} className="flex flex-row flex-wrap">
+      <div
+        ref={container}
+        className={`relative flex flex-row flex-wrap leading-loose`}
+      >
+        <div
+          className="absolute inset-0 -z-10 bg-pink-100"
+          style={{
+            background: `repeating-linear-gradient( 
+  to right,
+  #f6ba52,
+  #f6ba52 1px,
+  #ffffff 1px,
+  #ffffff 200px)`,
+          }}
+        ></div>
         {words.data.words.map((w) => (
           <Word word={w} key={w.start} />
         ))}

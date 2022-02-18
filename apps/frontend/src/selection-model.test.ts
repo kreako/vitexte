@@ -166,6 +166,25 @@ describe("Add a select to a tree", () => {
       },
     })
   })
+
+  test("in middle - middle", () => {
+    const model1 = { root: { start: 10, end: 20, left: null, right: null } }
+    const model2 = addSelect(model1, 30, 40)
+    const model3 = addSelect(model2, 22, 28)
+    assert.deepEqual(model3, {
+      root: {
+        start: 10,
+        end: 40,
+        left: {
+          start: 10,
+          end: 28,
+          left: leaf(10, 20),
+          right: leaf(22, 28),
+        },
+        right: leaf(30, 40),
+      },
+    })
+  })
 })
 
 describe("Add a delete node", () => {
@@ -219,6 +238,34 @@ describe("Add a delete node", () => {
     const model2 = addDelete(model1, 15, 25)
     assert.deepEqual(model2, {
       root: leaf(10, 15),
+    })
+  })
+})
+
+describe("Complex scenarii", () => {
+  test("2 select, 2 delete", () => {
+    const model1 = { root: null }
+    const model2 = addSelect(model1, 4, 8)
+    const model3 = addDelete(model2, 6.1, 6.8)
+    const model4 = addSelect(model3, 11, 15)
+    const model5 = addDelete(model4, 12.2, 12.9)
+    assert.deepEqual(model5, {
+      root: {
+        start: 4,
+        end: 15,
+        left: {
+          start: 4,
+          end: 8,
+          left: leaf(4, 6.1),
+          right: leaf(6.8, 8),
+        },
+        right: {
+          start: 11,
+          end: 15,
+          left: leaf(11, 12.2),
+          right: leaf(12.9, 15),
+        },
+      },
     })
   })
 })

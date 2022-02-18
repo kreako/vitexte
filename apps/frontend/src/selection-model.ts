@@ -1,6 +1,3 @@
-import { WordType } from "@vitexte/api"
-import { roundToNearestMinutes } from "date-fns"
-
 type Node = {
   start: number
   end: number
@@ -27,6 +24,30 @@ export const addSelect = (model: SelectionModel, start: number, end: number): Se
 
 export const addDelete = (model: SelectionModel, start: number, end: number): SelectionModel => {
   return { root: _addDelete(model.root, start, end) }
+}
+
+export const selectedState = (model: SelectionModel, start: number, end: number): boolean =>
+  _selectedState(model.root, start, end)
+
+const _selectedState = (node: Node | null, start: number, end: number): boolean => {
+  if (node == null) {
+    return false
+  }
+  if (nodeIsLeaf(node)) {
+    if (node.start <= start && end <= node.end) {
+      return true
+    } else {
+      return false
+    }
+  } else {
+    if (node.left && node.left.start <= start && end <= node.left.end) {
+      return _selectedState(node.left, start, end)
+    } else if (node.right && node.right.start <= start && end <= node.right.end) {
+      return _selectedState(node.right, start, end)
+    } else {
+      return false
+    }
+  }
 }
 
 class TreeError extends Error {

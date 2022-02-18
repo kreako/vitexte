@@ -1,5 +1,5 @@
 import { assert, describe, test } from "vitest"
-import { addDelete, addSelect } from "./selection-model"
+import { addDelete, addSelect, selectedState } from "./selection-model"
 
 const leaf = (start: number, end: number) => ({
   start,
@@ -267,5 +267,26 @@ describe("Complex scenarii", () => {
         },
       },
     })
+  })
+})
+
+describe("word state", () => {
+  test("2 select, 2 delete", () => {
+    const model1 = { root: null }
+    const model2 = addSelect(model1, 4, 8)
+    const model3 = addDelete(model2, 6.1, 6.8)
+    const model4 = addSelect(model3, 11, 15)
+    const model5 = addDelete(model4, 12.2, 12.9)
+
+    assert.isFalse(selectedState(model5, 3, 3.9))
+    assert.isTrue(selectedState(model5, 4.1, 4.9))
+    assert.isFalse(selectedState(model5, 6.1, 6.8))
+    assert.isTrue(selectedState(model5, 7.1, 7.8))
+
+    assert.isFalse(selectedState(model5, 8.1, 10.8))
+    assert.isTrue(selectedState(model5, 11, 12.2))
+    assert.isFalse(selectedState(model5, 12.2, 12.9))
+    assert.isTrue(selectedState(model5, 12.9, 15))
+    assert.isFalse(selectedState(model5, 15.1, 15.9))
   })
 })

@@ -1,5 +1,5 @@
 import { assert, describe, test } from "vitest"
-import { addDelete, addSelect, selectedState } from "./selection-model"
+import { deleteWord, addWordsSelection, selectedState } from "./selection-model"
 
 const leaf = (start: number, end: number) => ({
   start,
@@ -11,7 +11,7 @@ const leaf = (start: number, end: number) => ({
 describe("Add a select to a single node", () => {
   test("empty model", () => {
     const model1 = { root: null }
-    const model2 = addSelect(model1, 10, 20)
+    const model2 = addWordsSelection(model1, 10, 20)
     assert.deepEqual(model2, {
       root: leaf(10, 20),
     })
@@ -19,7 +19,7 @@ describe("Add a select to a single node", () => {
 
   test("already selected", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 12, 18)
+    const model2 = addWordsSelection(model1, 12, 18)
     assert.deepEqual(model2, {
       root: leaf(10, 20),
     })
@@ -27,7 +27,7 @@ describe("Add a select to a single node", () => {
 
   test("already selected - edge case", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 10, 20)
+    const model2 = addWordsSelection(model1, 10, 20)
     assert.deepEqual(model2, {
       root: leaf(10, 20),
     })
@@ -35,7 +35,7 @@ describe("Add a select to a single node", () => {
 
   test("bigger selection", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 8, 22)
+    const model2 = addWordsSelection(model1, 8, 22)
     assert.deepEqual(model2, {
       root: leaf(8, 22),
     })
@@ -43,7 +43,7 @@ describe("Add a select to a single node", () => {
 
   test("from the left", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 8, 12)
+    const model2 = addWordsSelection(model1, 8, 12)
     assert.deepEqual(model2, {
       root: leaf(8, 20),
     })
@@ -51,7 +51,7 @@ describe("Add a select to a single node", () => {
 
   test("from the left - edge case", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 8, 10)
+    const model2 = addWordsSelection(model1, 8, 9)
     assert.deepEqual(model2, {
       root: leaf(8, 20),
     })
@@ -59,7 +59,7 @@ describe("Add a select to a single node", () => {
 
   test("from the right", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 18, 22)
+    const model2 = addWordsSelection(model1, 18, 22)
     assert.deepEqual(model2, {
       root: leaf(10, 22),
     })
@@ -67,7 +67,7 @@ describe("Add a select to a single node", () => {
 
   test("from the right - edge case", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 20, 22)
+    const model2 = addWordsSelection(model1, 21, 22)
     assert.deepEqual(model2, {
       root: leaf(10, 22),
     })
@@ -75,7 +75,7 @@ describe("Add a select to a single node", () => {
 
   test("far left", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 2, 8)
+    const model2 = addWordsSelection(model1, 2, 8)
     assert.deepEqual(model2, {
       root: {
         start: 2,
@@ -88,7 +88,7 @@ describe("Add a select to a single node", () => {
 
   test("far right", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
+    const model2 = addWordsSelection(model1, 30, 40)
     assert.deepEqual(model2, {
       root: {
         start: 10,
@@ -103,8 +103,8 @@ describe("Add a select to a single node", () => {
 describe("Add a select to a tree", () => {
   test("far right", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
-    const model3 = addSelect(model2, 50, 60)
+    const model2 = addWordsSelection(model1, 30, 40)
+    const model3 = addWordsSelection(model2, 50, 60)
     assert.deepEqual(model3, {
       root: {
         start: 10,
@@ -122,8 +122,8 @@ describe("Add a select to a tree", () => {
 
   test("far left", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
-    const model3 = addSelect(model2, 2, 6)
+    const model2 = addWordsSelection(model1, 30, 40)
+    const model3 = addWordsSelection(model2, 2, 6)
     assert.deepEqual(model3, {
       root: {
         start: 2,
@@ -141,8 +141,8 @@ describe("Add a select to a tree", () => {
 
   test("in middle - from left", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
-    const model3 = addSelect(model2, 5, 10)
+    const model2 = addWordsSelection(model1, 30, 40)
+    const model3 = addWordsSelection(model2, 5, 9)
     assert.deepEqual(model3, {
       root: {
         start: 5,
@@ -155,8 +155,8 @@ describe("Add a select to a tree", () => {
 
   test("in middle - from right", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
-    const model3 = addSelect(model2, 35, 45)
+    const model2 = addWordsSelection(model1, 30, 40)
+    const model3 = addWordsSelection(model2, 41, 45)
     assert.deepEqual(model3, {
       root: {
         start: 10,
@@ -169,8 +169,8 @@ describe("Add a select to a tree", () => {
 
   test("in middle - middle", () => {
     const model1 = { root: { start: 10, end: 20, left: null, right: null } }
-    const model2 = addSelect(model1, 30, 40)
-    const model3 = addSelect(model2, 22, 28)
+    const model2 = addWordsSelection(model1, 30, 40)
+    const model3 = addWordsSelection(model2, 22, 28)
     assert.deepEqual(model3, {
       root: {
         start: 10,
@@ -191,35 +191,39 @@ describe("Add a delete node", () => {
   test("Add a delete node to an empty model should throw", () => {
     const model1 = { root: null }
     assert.throw(() => {
-      addDelete(model1, 5, 6)
+      deleteWord(model1, 5)
     })
   })
 
   test("Add a delete node to a leaf node far before should throw", () => {
     const model1 = { root: leaf(10, 20) }
     assert.throw(() => {
-      addDelete(model1, 5, 6)
+      deleteWord(model1, 9)
     })
   })
 
   test("Add a delete node to a leaf node far after should throw", () => {
     const model1 = { root: leaf(10, 20) }
     assert.throw(() => {
-      addDelete(model1, 25, 26)
+      deleteWord(model1, 21)
     })
   })
 
   test("Add a delete node to a leaf node - start of selection - edge case", () => {
     const model1 = { root: leaf(10, 20) }
-    const model2 = addDelete(model1, 5, 10)
+    const model2 = deleteWord(model1, 10)
     assert.deepEqual(model2, {
-      root: leaf(10, 20),
+      root: leaf(11, 20),
     })
   })
 
   test("Add a delete node to a leaf node - start of selection", () => {
     const model1 = { root: leaf(10, 20) }
-    const model2 = addDelete(model1, 5, 15)
+    let model2 = deleteWord(model1, 10)
+    model2 = deleteWord(model1, 14)
+    model2 = deleteWord(model1, 13)
+    model2 = deleteWord(model1, 12)
+    model2 = deleteWord(model1, 11)
     assert.deepEqual(model2, {
       root: leaf(15, 20),
     })
@@ -227,15 +231,19 @@ describe("Add a delete node", () => {
 
   test("Add a delete node to a leaf node - end of selection - edge case", () => {
     const model1 = { root: leaf(10, 20) }
-    const model2 = addDelete(model1, 20, 25)
+    const model2 = deleteWord(model1, 20)
     assert.deepEqual(model2, {
-      root: leaf(10, 20),
+      root: leaf(10, 19),
     })
   })
 
   test("Add a delete node to a leaf node - end of selection", () => {
     const model1 = { root: leaf(10, 20) }
-    const model2 = addDelete(model1, 15, 25)
+    let model2 = deleteWord(model1, 20)
+    model2 = deleteWord(model1, 16)
+    model2 = deleteWord(model1, 17)
+    model2 = deleteWord(model1, 18)
+    model2 = deleteWord(model1, 19)
     assert.deepEqual(model2, {
       root: leaf(10, 15),
     })
@@ -245,10 +253,10 @@ describe("Add a delete node", () => {
 describe("Complex scenarii", () => {
   test("2 select, 2 delete", () => {
     const model1 = { root: null }
-    const model2 = addSelect(model1, 4, 8)
-    const model3 = addDelete(model2, 6.1, 6.8)
-    const model4 = addSelect(model3, 11, 15)
-    const model5 = addDelete(model4, 12.2, 12.9)
+    const model2 = addWordsSelection(model1, 4, 8)
+    const model3 = deleteWord(model2, 6)
+    const model4 = addWordsSelection(model3, 11, 15)
+    const model5 = deleteWord(model4, 12)
     assert.deepEqual(model5, {
       root: {
         start: 4,
@@ -256,16 +264,34 @@ describe("Complex scenarii", () => {
         left: {
           start: 4,
           end: 8,
-          left: leaf(4, 6.1),
-          right: leaf(6.8, 8),
+          left: leaf(4, 5),
+          right: leaf(7, 8),
         },
         right: {
           start: 11,
           end: 15,
-          left: leaf(11, 12.2),
-          right: leaf(12.9, 15),
+          left: leaf(11, 11),
+          right: leaf(13, 15),
         },
       },
+    })
+  })
+
+  test("Merge 2 leafs if possible", () => {
+    const model1 = { root: null }
+    const model2 = addWordsSelection(model1, 4, 8)
+    const model3 = deleteWord(model2, 6)
+    assert.deepEqual(model3, {
+      root: {
+        start: 4,
+        end: 8,
+        left: leaf(4, 5),
+        right: leaf(7, 8),
+      },
+    })
+    const model4 = addWordsSelection(model3, 6, 6)
+    assert.deepEqual(model3, {
+      root: leaf(4, 8),
     })
   })
 })
@@ -273,20 +299,25 @@ describe("Complex scenarii", () => {
 describe("word state", () => {
   test("2 select, 2 delete", () => {
     const model1 = { root: null }
-    const model2 = addSelect(model1, 4, 8)
-    const model3 = addDelete(model2, 6.1, 6.8)
-    const model4 = addSelect(model3, 11, 15)
-    const model5 = addDelete(model4, 12.2, 12.9)
+    const model2 = addWordsSelection(model1, 4, 8)
+    const model3 = deleteWord(model2, 6)
+    const model4 = addWordsSelection(model3, 11, 15)
+    const model5 = deleteWord(model4, 12)
 
-    assert.isFalse(selectedState(model5, 3, 3.9))
-    assert.isTrue(selectedState(model5, 4.1, 4.9))
-    assert.isFalse(selectedState(model5, 6.1, 6.8))
-    assert.isTrue(selectedState(model5, 7.1, 7.8))
+    assert.isFalse(selectedState(model5, 3))
+    assert.isTrue(selectedState(model5, 4))
+    assert.isTrue(selectedState(model5, 5))
+    assert.isFalse(selectedState(model5, 6))
+    assert.isTrue(selectedState(model5, 7))
+    assert.isTrue(selectedState(model5, 8))
+    assert.isFalse(selectedState(model5, 9))
 
-    assert.isFalse(selectedState(model5, 8.1, 10.8))
-    assert.isTrue(selectedState(model5, 11, 12.2))
-    assert.isFalse(selectedState(model5, 12.2, 12.9))
-    assert.isTrue(selectedState(model5, 12.9, 15))
-    assert.isFalse(selectedState(model5, 15.1, 15.9))
+    assert.isFalse(selectedState(model5, 10))
+    assert.isTrue(selectedState(model5, 11))
+    assert.isFalse(selectedState(model5, 12))
+    assert.isTrue(selectedState(model5, 13))
+    assert.isTrue(selectedState(model5, 14))
+    assert.isTrue(selectedState(model5, 15))
+    assert.isFalse(selectedState(model5, 16))
   })
 })

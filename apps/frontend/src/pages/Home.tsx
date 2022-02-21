@@ -192,30 +192,65 @@ function useVideoController() {
 
 function useTonePlayer() {
   const [loaded, setLoaded] = useState(false)
+  const rootBuffer = useRef<Tone.ToneAudioBuffer | null>(null)
   const player = useRef<Tone.Player | null>(null)
+  const buffer = useRef<Tone.ToneAudioBuffer | null>(null)
 
   useEffectOnce(() => {
-    player.current = new Tone.Player("/api/video/1", () => {
+    // At init, load the whole sound
+    rootBuffer.current = new Tone.ToneAudioBuffer("/api/video/1", () => {
       setLoaded(true)
-    }).toDestination()
+    })
+
+    // Setup a callback for video update
+    Tone.Transport.scheduleRepeat((time) => {
+      Tone.Draw.schedule(() => {
+        // TODO
+        // console.log("draw", time)
+      }, time)
+    }, 1 / 12) // 12 fps for now
+    // Launch the transport, already in loop mode
+    // So no glitch on first loop() call
+    Tone.Transport.loop = true
+    Tone.Transport.loopStart = 0
+    Tone.Transport.loopEnd = 1
+    Tone.Transport.start()
   })
 
   const loop = (start: number, end: number) => {
-    if (!loaded || player.current == null) {
+    if (!loaded || rootBuffer.current == null) {
       return
     }
-    player.current.loop = true
-    player.current.loopStart = start
-    player.current.loopEnd = end
-    player.current.seek(start)
+    // Cleanup previous player/buffer if any
+    if (player.current != null) {
+      player.current.stop(0)
+      player.current.dispose()
+    }
+    if (buffer.current != null) {
+      buffer.current.dispose()
+    }
+    // Set the new loop to the correct length
+    Tone.Transport.loop = true
+    Tone.Transport.loopStart = 0
+    Tone.Transport.loopEnd = end - start
+    Tone.Transport.seconds = 0
+
+    // Extract the selected sound from the root buffer
+    buffer.current = rootBuffer.current.slice(start, end)
+    // A player
+    player.current = new Tone.Player(buffer.current).toDestination().sync()
     player.current.start()
+
+    // And force a transport start (if this was in pause)
+    Tone.Transport.start()
   }
 
   const stop = () => {
     if (!loaded || player.current == null) {
       return
     }
-    player.current.stop()
+    Tone.Transport.pause()
+    Tone.Transport.seconds = 0
   }
 
   return { loop, stop }
@@ -231,8 +266,8 @@ export default function Home() {
   const onWordSelection = (start: WordType, end: WordType) => {
     //video.seek(start)
     // video.play()
-    video.loop(start.start, end.end)
-    // player.loop(start.start, end.end)
+    // video.loop(start.start, end.end)
+    player.loop(start.start, end.end)
   }
 
   const clearWordSelection = () => {

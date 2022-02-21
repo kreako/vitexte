@@ -69,7 +69,7 @@ function Words({ onWordSelection, clearWordSelection, toolMode }: WordsProps) {
         // only the start of the selection
         setSelect2PointsStart(index)
         setSelection(addWordsSelection(selection, index, index))
-        // clearWordSelection()
+        clearWordSelection()
       } else {
         // Selection is complete with this new click
         const firstSelectedWordIsStart = select2PointsStart < index
@@ -77,7 +77,9 @@ function Words({ onWordSelection, clearWordSelection, toolMode }: WordsProps) {
         const end = firstSelectedWordIsStart ? index : select2PointsStart
         setSelection(addWordsSelection(selection, start, end))
         setSelect2PointsStart(null)
-        // onWordSelection(start, end)
+        if (words.data?.words) {
+          onWordSelection(words.data.words[start], words.data.words[end])
+        }
       }
     } else if (toolMode === "delete") {
       setSelection(deleteWord(selection, index))
@@ -111,46 +113,45 @@ function Words({ onWordSelection, clearWordSelection, toolMode }: WordsProps) {
 
 type VideoProps = {
   onDuration: (duration: number) => void
-  onCurrentTime: (currentTime: number) => void
-  setRef: (ref: HTMLAudioElement) => void
+  setRef: (ref: HTMLVideoElement) => void
 }
 
-function Video({ onDuration, onCurrentTime, setRef }: VideoProps) {
-  const ref = useRef<HTMLAudioElement>(null!)
-  const setLocalRef = (element: HTMLAudioElement) => {
+function Video({ onDuration, setRef }: VideoProps) {
+  const ref = useRef<HTMLVideoElement>(null!)
+  const setLocalRef = (element: HTMLVideoElement) => {
     ref.current = element
     setRef(element)
-  }
-  const onTimeUpdate = () => {
-    onCurrentTime(ref.current.currentTime)
   }
   const onPlay = () => {
     onDuration(ref.current.duration)
   }
-  return <audio src="/api/video/1" ref={setLocalRef} onTimeUpdate={onTimeUpdate} onPlay={onPlay} />
+  return <video src="/api/video/1" ref={setLocalRef} onPlay={onPlay} />
 }
 
 function useVideoController() {
   const ref = useRef<HTMLAudioElement>()
   const [duration, setDuration] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
-  const [_loop, setLoop] = useState({ loop: false, start: 0, end: 0 })
-  const [count, setCount] = useState(0)
+  const _loop = useRef({ loop: false, start: 0, end: 0 })
 
   const onDuration = (duration: number) => {
     setDuration(duration)
   }
 
-  const onCurrentTime = (currentTime: number) => {
-    setCurrentTime(currentTime)
-    setCount(count + 1)
-    if (currentTime > 100) {
-      pause()
+  const tick = () => {
+    if (ref.current == null) {
+      return
     }
-    if (_loop.loop) {
-      if (currentTime >= _loop.end) {
-        seek(_loop.start)
+    const t = ref.current.currentTime
+    setCurrentTime(t)
+    console.log("loop", _loop.current)
+    if (_loop.current.loop) {
+      if (t >= _loop.current.end) {
+        seek(_loop.current.start)
       }
+    }
+    if (!ref.current.paused) {
+      requestAnimationFrame(tick)
     }
   }
 
@@ -161,6 +162,7 @@ function useVideoController() {
   const play = () => {
     if (ref.current) {
       ref.current.play()
+      tick()
     }
   }
 
@@ -168,7 +170,7 @@ function useVideoController() {
     if (ref.current) {
       ref.current.pause()
     }
-    setLoop({ loop: false, start: 0, end: 0 })
+    _loop.current = { loop: false, start: 0, end: 0 }
   }
 
   const seek = (to: number) => {
@@ -178,16 +180,14 @@ function useVideoController() {
   }
 
   const loop = (start: number, end: number) => {
-    setLoop({ loop: true, start, end })
+    _loop.current = { loop: true, start, end }
     seek(start)
     play()
   }
 
-  const element = (
-    <Video onDuration={onDuration} onCurrentTime={onCurrentTime} setRef={setVideoRef} />
-  )
+  const element = <Video onDuration={onDuration} setRef={setVideoRef} />
 
-  return { duration, currentTime, play, pause, seek, loop, element, count }
+  return { duration, currentTime, play, pause, seek, loop, element, _loop }
 }
 
 function useTonePlayer() {
@@ -231,8 +231,8 @@ export default function Home() {
   const onWordSelection = (start: WordType, end: WordType) => {
     //video.seek(start)
     // video.play()
-    // video.loop(start, end)
-    player.loop(start.start, end.end)
+    video.loop(start.start, end.end)
+    // player.loop(start.start, end.end)
   }
 
   const clearWordSelection = () => {
@@ -250,18 +250,11 @@ export default function Home() {
         />
       </div>
       <div className="h-screen overflow-hidden">
-        <div className="flex flex-row">
-          <Toolbar toolMode={toolMode} onModeChange={setToolMode} orientation="vertical" />
-        </div>
-        <div className="h-2/3">{video.element}</div>
-        <div className="h-1/3">
-          {display && (
-            <>
-              <div>CurrentTime : {video.currentTime}</div>
-              <div>Duration : {video.duration}</div>
-              <div>Count : {video.count}</div>
-            </>
-          )}
+        <div className="">{video.element}</div>
+        <div className="">
+          <div>CurrentTime : {video.currentTime}</div>
+          <div>Duration : {video.duration}</div>
+          <div>Loop : {JSON.stringify(video._loop)}</div>
           <div className="flex flex-row space-x-2">
             <button
               onClick={() => video.seek(0)}
@@ -273,13 +266,19 @@ export default function Home() {
               onClick={video.play}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
-              Play
+              Video Play
+            </button>
+            <button
+              onClick={video.pause}
+              className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
+            >
+              Video Pause
             </button>
             <button
               onClick={player.stop}
               className="rounded-md border border-sky-900 px-4 py-2 text-sky-900"
             >
-              Stop
+              Player Stop
             </button>
             <button
               onClick={() => setDisplay(!display)}

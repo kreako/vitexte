@@ -9,6 +9,7 @@ const fetchWords = async ({
 
 export const useWords = (id: number) => {
   return useQuery(keys.words(id), fetchWords, {
+    staleTime: Infinity,
     useErrorBoundary: true,
     retry: retryQuery(["AuthenticationError"]),
   })
@@ -20,6 +21,7 @@ const fetchVideo = async ({
 
 export const useVideo = (id: number) => {
   return useQuery(keys.video(id), fetchVideo, {
+    staleTime: Infinity,
     useErrorBoundary: true,
     retry: retryQuery(["AuthenticationError"]),
   })

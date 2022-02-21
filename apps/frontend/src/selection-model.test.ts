@@ -1,5 +1,5 @@
 import { assert, describe, test } from "vitest"
-import { deleteWord, addWordsSelection, selectedState } from "./selection-model"
+import { deleteWord, addWordsSelection, selectedState, SelectionModel } from "./selection-model"
 
 const leaf = (start: number, end: number) => ({
   start,
@@ -208,6 +208,13 @@ describe("Add a delete node", () => {
       deleteWord(model1, 21)
     })
   })
+  test("Add a delete node to a leaf node - remove it completely", () => {
+    const model1 = { root: leaf(10, 10) }
+    const model2 = deleteWord(model1, 10)
+    assert.deepEqual(model2, {
+      root: null,
+    })
+  })
 
   test("Add a delete node to a leaf node - start of selection - edge case", () => {
     const model1 = { root: leaf(10, 20) }
@@ -217,14 +224,27 @@ describe("Add a delete node", () => {
     })
   })
 
+  test("Add a delete node to a leaf node - middle of things", () => {
+    const model1 = { root: leaf(10, 20) }
+    const model2 = deleteWord(model1, 13)
+    assert.deepEqual(model2, {
+      root: {
+        start: 10,
+        end: 20,
+        left: leaf(10, 12),
+        right: leaf(14, 20),
+      },
+    })
+  })
+
   test("Add a delete node to a leaf node - start of selection", () => {
     const model1 = { root: leaf(10, 20) }
-    let model2 = deleteWord(model1, 10)
-    model2 = deleteWord(model1, 14)
-    model2 = deleteWord(model1, 13)
-    model2 = deleteWord(model1, 12)
-    model2 = deleteWord(model1, 11)
-    assert.deepEqual(model2, {
+    const model2 = deleteWord(model1, 10)
+    const model3 = deleteWord(model2, 14)
+    const model4 = deleteWord(model3, 13)
+    const model5 = deleteWord(model4, 12)
+    const model6 = deleteWord(model5, 11)
+    assert.deepEqual(model6, {
       root: leaf(15, 20),
     })
   })
@@ -290,8 +310,45 @@ describe("Complex scenarii", () => {
       },
     })
     const model4 = addWordsSelection(model3, 6, 6)
-    assert.deepEqual(model3, {
+    assert.deepEqual(model4, {
       root: leaf(4, 8),
+    })
+  })
+
+  test("Merge 2 leafs if possible - end move", () => {
+    const model1 = { root: null }
+    const model2 = addWordsSelection(model1, 4, 8)
+    const model3 = deleteWord(model2, 6)
+    assert.deepEqual(model3, {
+      root: {
+        start: 4,
+        end: 8,
+        left: leaf(4, 5),
+        right: leaf(7, 8),
+      },
+    })
+    const model4 = addWordsSelection(model3, 3, 9)
+    assert.deepEqual(model4, {
+      root: leaf(3, 9),
+    })
+  })
+
+  test("Deep merge", () => {
+    let model: SelectionModel = { root: null }
+    model = addWordsSelection(model, 1, 1)
+    model = addWordsSelection(model, 3, 3)
+    model = addWordsSelection(model, 5, 5)
+    model = addWordsSelection(model, 7, 7)
+    model = addWordsSelection(model, 9, 9)
+    model = addWordsSelection(model, 11, 11)
+    model = addWordsSelection(model, 12, 12)
+    model = addWordsSelection(model, 10, 10)
+    model = addWordsSelection(model, 8, 8)
+    model = addWordsSelection(model, 6, 6)
+    model = addWordsSelection(model, 4, 4)
+    model = addWordsSelection(model, 2, 2)
+    assert.deepEqual(model, {
+      root: leaf(1, 12),
     })
   })
 })

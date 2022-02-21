@@ -5,6 +5,8 @@ import Loading from "../components/Loading"
 import RawError from "../components/RawError"
 import * as Tone from "tone"
 import { useEffectOnce } from "usehooks-ts"
+import Toolbar, { ToolMode } from "../components/Toolbar"
+import { deleteWord, addWordsSelection, selectedState, SelectionModel } from "../selection-model"
 
 const DEFAULT_SPACE_REM = 0.125
 
@@ -17,34 +19,19 @@ const deltaToSpaceRem = (delta: number) => {
   }
 }
 
-type WordsSelection = {
-  start: number | null
-  end: number | null
-}
-
-function isSelected(word: WordType, selection: WordsSelection) {
-  if (selection.start == null) {
-    return false
-  }
-  if (selection.end == null) {
-    return word.start === selection.start
-  }
-  return selection.start <= word.start && word.end <= selection.end
-}
-
 type WordProps = {
   onClick: () => void
   word: WordType
-  selection: WordsSelection
+  selected: boolean
 }
 
-function Word({ word, onClick, selection }: WordProps) {
+function Word({ word, onClick, selected }: WordProps) {
   let confClass = ""
   if (word.conf < 1) {
     confClass = "bg-sky-50"
   }
   let textClass = "text-sky-900 hover:text-sky-700"
-  if (isSelected(word, selection)) {
+  if (selected) {
     textClass = "bg-pink-300 text-pink-900 hover:text-pink-700"
   }
   return (
@@ -64,41 +51,53 @@ function Word({ word, onClick, selection }: WordProps) {
 }
 
 type WordsProps = {
-  onWordSelection: (start: number, end: number) => void
+  onWordSelection: (start: WordType, end: WordType) => void
   clearWordSelection: () => void
+  toolMode: ToolMode
 }
 
-function Words({ onWordSelection, clearWordSelection }: WordsProps) {
+function Words({ onWordSelection, clearWordSelection, toolMode }: WordsProps) {
   const words = useWords(1)
-  const [selection, setSelection] = useState<WordsSelection>({ start: null, end: null })
+  const [selection, setSelection] = useState<SelectionModel>({ root: null })
+  const [select2PointsStart, setSelect2PointsStart] = useState<number | null>(null)
 
-  const onWordCick = (word: WordType) => () => {
-    if (selection.start == null) {
-      setSelection({ start: word.start, end: null })
-      clearWordSelection()
-      return
+  const onWordCick = (index: number) => () => {
+    if (toolMode === "select") {
+      setSelection(addWordsSelection(selection, index, index))
+    } else if (toolMode === "select-2points") {
+      if (select2PointsStart == null) {
+        // only the start of the selection
+        setSelect2PointsStart(index)
+        setSelection(addWordsSelection(selection, index, index))
+        // clearWordSelection()
+      } else {
+        // Selection is complete with this new click
+        const firstSelectedWordIsStart = select2PointsStart < index
+        const start = firstSelectedWordIsStart ? select2PointsStart : index
+        const end = firstSelectedWordIsStart ? index : select2PointsStart
+        setSelection(addWordsSelection(selection, start, end))
+        setSelect2PointsStart(null)
+        // onWordSelection(start, end)
+      }
+    } else if (toolMode === "delete") {
+      setSelection(deleteWord(selection, index))
     }
-    if (selection.end == null) {
-      const start = selection.start
-      const end = word.end
-      setSelection({ start, end })
-      onWordSelection(start, end)
-      return
-    }
-    // replace the whole selection
-    setSelection({ start: word.start, end: null })
-    clearWordSelection()
   }
 
   if (words.data) {
     return (
       <>
-        <div>{JSON.stringify(selection)}</div>
-        <div className={`relative flex flex-row flex-wrap leading-loose`}>
-          {words.data.words.map((w) => (
-            <Word word={w} onClick={onWordCick(w)} selection={selection} key={w.start} />
+        <div className={`relative flex flex-row flex-wrap overflow-auto leading-loose`}>
+          {words.data.words.map((w, index) => (
+            <Word
+              word={w}
+              onClick={onWordCick(index)}
+              selected={selectedState(selection, index)}
+              key={w.start}
+            />
           ))}
         </div>
+        {/* <div>{JSON.stringify(selection)}</div> */}
       </>
     )
   }
@@ -225,14 +224,15 @@ function useTonePlayer() {
 export default function Home() {
   const video = useVideoController()
   const [display, setDisplay] = useState(false)
+  const [toolMode, setToolMode] = useState<ToolMode>("select")
 
   const player = useTonePlayer()
 
-  const onWordSelection = (start: number, end: number) => {
+  const onWordSelection = (start: WordType, end: WordType) => {
     //video.seek(start)
     // video.play()
     // video.loop(start, end)
-    player.loop(start, end)
+    player.loop(start.start, end.end)
   }
 
   const clearWordSelection = () => {
@@ -241,10 +241,18 @@ export default function Home() {
 
   return (
     <div className="mt-2 flex flex-row space-x-4 pl-4">
-      <div className="h-screen w-1/2 overflow-auto">
-        <Words onWordSelection={onWordSelection} clearWordSelection={clearWordSelection} />
+      <div className="flex h-screen max-w-lg flex-col items-center space-y-1">
+        <Toolbar toolMode={toolMode} onModeChange={setToolMode} orientation="horizontal" />
+        <Words
+          onWordSelection={onWordSelection}
+          clearWordSelection={clearWordSelection}
+          toolMode={toolMode}
+        />
       </div>
-      <div className="h-screen w-1/2 overflow-hidden">
+      <div className="h-screen overflow-hidden">
+        <div className="flex flex-row">
+          <Toolbar toolMode={toolMode} onModeChange={setToolMode} orientation="vertical" />
+        </div>
         <div className="h-2/3">{video.element}</div>
         <div className="h-1/3">
           {display && (

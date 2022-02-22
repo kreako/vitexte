@@ -266,9 +266,6 @@ function useTonePlayer() {
   }
 
   const stop = () => {
-    if (!loaded || player.current == null) {
-      return
-    }
     Tone.Transport.pause()
     Tone.Transport.seconds = 0
   }

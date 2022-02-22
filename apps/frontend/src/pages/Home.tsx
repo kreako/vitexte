@@ -211,9 +211,8 @@ function useTonePlayer() {
     }, 1 / 12) // 12 fps for now
     // Launch the transport, already in loop mode
     // So no glitch on first loop() call
+    Tone.Transport.setLoopPoints(0, 10)
     Tone.Transport.loop = true
-    Tone.Transport.loopStart = 0
-    Tone.Transport.loopEnd = 1
     Tone.Transport.start()
   })
 
@@ -221,28 +220,49 @@ function useTonePlayer() {
     if (!loaded || rootBuffer.current == null) {
       return
     }
+    // Reset seconds to 0
+    Tone.Transport.seconds = 0
     // Cleanup previous player/buffer if any
     if (player.current != null) {
+      // There is sometimes a strange RangeError due to TickSource.getElapsedSeconds returning
+      // a nearly 0 but negative like :
+      //
+      // Uncaught RangeError: Value must be within [0, Infinity], got: -5.684341886080802e-14
+      // assertRange Debug.ts:17
+      // setStateAtTime StateTimeline.ts:53
+      // stop Source.ts:241
+      // ...
+      if (Tone.Transport.seconds <= 0) {
+        // Force to 0
       player.current.stop(0)
+      } else {
+        // Let Tone compute the value itself
+        player.current.stop()
+      }
       player.current.dispose()
     }
     if (buffer.current != null) {
       buffer.current.dispose()
     }
     // Set the new loop to the correct length
+    Tone.Transport.setLoopPoints(0, end - start)
     Tone.Transport.loop = true
-    Tone.Transport.loopStart = 0
-    Tone.Transport.loopEnd = end - start
     Tone.Transport.seconds = 0
 
     // Extract the selected sound from the root buffer
     buffer.current = rootBuffer.current.slice(start, end)
     // A player
     player.current = new Tone.Player(buffer.current).toDestination().sync()
-    player.current.start()
-
     // And force a transport start (if this was in pause)
     Tone.Transport.start()
+    // Start the player
+    // Same bug as before now < 0
+    if (Tone.Transport.seconds <= 0) {
+      // Force 0
+      player.current.start(0)
+    } else {
+      player.current.start()
+    }
   }
 
   const stop = () => {
